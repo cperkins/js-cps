@@ -1,0 +1,310 @@
+<!DOCTYPE html lang="es">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="Content-language" content="es">
+
+		<script  src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+		<script src="js-cps.js"></script>
+		<script>$(document).ready(function(){ console.log('ready!'); convert_all_js_cps(false); });</script>
+		<script>
+			function get_server_data(url, datav, successf, errorf)
+			{
+				var options = datav ? {data:datav} : {};
+				options.success = successf;
+				if(typeof errorf === 'undefined')
+				{	
+					options.error = function(){ successf(null); };
+				}
+				else
+				{
+					options.error =  errorf;
+				}
+				$.ajax(url, options);
+			}
+		</script>
+
+		<script type="text/javascript">
+			function load_something()
+			{
+				//$.ajax('creator.php', {success:function(data){ console.log('super' + data); }});
+				get_server_data('creator.php', null, function(data){ console.log('rocking' + data); });
+		     }
+		</script>
+		<!-- <script > -->  <script type="text/js-cps"> 
+			function load_some()
+			{
+				var xx = get_server_data('creator.php', null, {CPS:xx} );
+				console.log('received xx: ', xx);
+				if(xx)
+				{
+					var yy = get_server_data('http://localhost:8888/js-playground/php/xy_json.php', {x:400, y:200}, {CPS:yy} );
+					if(yy)
+					{ 
+						console.log('received yy: ', yy); 
+						
+						var ww = get_server_data('htt://localhost:8888/nonexistingurl.php', null, {CPS:ww} );
+						console.log('for better or worse, this is the ww that we got: ', ww);
+						
+						var errorh = function(obj, status, text){ console.log('error thrown: ', status, text); };
+						var zz = get_server_data('http://localhost:8888/thisurldoesnotexist.php', null, {CPS:zz, ERROR:errorh});
+						 // none of this will be executed, as the error handler will be fired instead.
+						if(zz)
+						{
+							console.log('received zz: ', zz);
+						}
+					}
+				}
+			}
+		</script>
+		
+		<script type="text/js-cps" src="remote_cps.js"></script>
+		
+		<style>
+			body{ font-family: sans-serif;}
+			blockquote{ font-family:serif; }
+			.inlinecode { font-family:monospace; font-size:1.2em;  }
+			.heavy { font-weight:550; }
+			#fbody{ display:none; }
+			.clickable{ cursor:pointer; }
+			.clickable:hover{ background-color:#EEE; }
+		</style>
+</head>
+<body>
+	<h1>JS-CPS</h1>
+	<p>JS-CPS is a very simple JavaScript library for converting &quot;normal&quot; synchronous looking code into the Continuation Passing Style that is needed by modern AJAX Javascript</p>
+	<h2>Credits &amp; License</h2>
+	<blockquote>
+		<p>Created by Chris Perkins  (c) 2011-2012</p>
+		
+		<p>JS-CPS is licensed under the MIT license.  Which pretty much means you can use it however you like.</p>
+		<p>Please contribute to its continued success on GitHub. If you use it, it'd be cool to let me know.</p>
+	</blockquote>
+	<h2>Quick Example</h2>
+	<p>Let's say you have written a function named <span class="inlinecode">get_server_data</span> and it uses an typical AJAX XmlHttpRequest to fetch something from a server. The important thing about this function is that it <i>last two arguments</i> are a success callback function and an error callback function.  The success callback is called with one argument: the data that is retrieved.  The error callback argument is optional to our function. Don't worry about it now.</p>
+	<p>Here is the prototype for such a function.  You can click it to see an implementation that uses jQuery. </p>
+	<pre onclick="$('#fbody').toggle()" class="clickable">
+         function get_server_data(url, datav, successf, errorf)<span id="fbody">{
+		var options = datav ? {data:datav} : {};
+		options.success = successf;
+		if(typeof errorf === 'undefined')
+		{	
+			options.error = function(){ successf(null); };
+		}
+		else
+		{
+			options.error =  errorf;
+		}
+		$.ajax(url, options);
+	  }</span></pre>
+	<p>Now we need to ask the server if the user is logged in. And if they are, as the server for their last project id, if any. And, with that, ask the server for their project data. If the user is not logged in or there is not a project id, then we need to display some login or new project dialogs.</p>
+	<p>Here is how that code might be written <b>without</b> JS-CPS</p>
+<pre>
+	function init()
+	{
+		get_server_data('user_logged_in.php', null, 
+		  function(user_id)
+		  {
+		  	if(!user_id)
+		  	{
+		  		display_login();
+		  	}
+		  	else
+		  	{
+		  		get_server_data('get_project_id.php', null,
+		  		  function(project_id)
+		  		  {
+		  		  	if(!project_id)
+		  		  	{
+		  		  		display_new_project();
+		  		  	}
+		  		  	else
+		  		  	{
+		  		  		get_server_data('get_project_data.php', {user_id:user_id, project_id:project_id},
+		  		  		  function(project_data)
+		  		  		  {
+		  		  		  	display_project(project_data);
+		  		  		  });
+		  		  	}
+		  		  });
+		  	}
+		  });
+	}
+</pre>
+<p>That's a lot of rightward drift!  And a lot of anonymous functions. And a lot of <span class="inlinecode">});}});}</span>.</p>
+<p>The code above is written in something called <i>Continuation Passing Style</i>.  Because AJAX calls are asynchronous ( a desirable feature ) whenever you encounter one, the "rest of the operation" (aka the Continuation) that you want to perform once the data is gotten must be wrapped in a callback handler. If you are regularly using jQuery <span class="inlinecode">.ajax()</span> or <span class="inlinecode">.getScript()</span> or Dojo's  <span class="inlinecode">xhr</span> object, then you are writing Continuation Passing Style (CPS) code all the time.  This is the world we live in. Until now.</p>
+<p><span class="inlinecode">JS-CPS</span> is a library for automatically converting seemingly synchronous code into the CPS style you see above.  It makes working with Ajax calls much easier.  Here is how you would write the above using JS-CPS:</p>
+<pre>
+	function init()
+	{
+		var user_id = get_server_data('user_logged_in.php', null, {CPS:user_id});
+		if(!user_id)
+		{
+			display_login();
+		}
+		else
+		{
+			var project_id = get_server_data('get_project_id.php', null, {CPS:project_id});
+			if(!project_id)
+			{
+				display_new_project();
+			}
+			else
+			{
+				var project_data = get_server_data('get_project_data.php', {user_id:user_id, project_id:project_id}, {CPS:project_data});
+				display_project(project_data);
+			}
+		}
+	}
+</pre>
+<p>When run through JS-CPS, the code above will be automatically translated into the CPS style we saw in the first example. The code may look synchronous, but when converted it becomes the asynchronous non-blocking Ajaxy style dreck we all know and hate.</p>
+<p>Because that CPS token is itself legal javascript, the pre-transformed JS-CPS code can still be vetted by your favorite code editor for coding mistakes. Stub functions can be used in place of your Ajax calls for testing.</p> 
+<hr />
+<h2>Getting Started</h2>
+<p>Download it here. </p>
+<h3>Convert in browser or shell</h3>
+<p>Like CoffeeScript, JS-CPS can be used in one of two modes.  You can either embed the transformer directly in your page, and then any <span class="inlinecode heavy">&lt;script&gt;</span> tags with <span class="inlinecode heavy">type=&quot;text/js-cps&quot;</span> will automatically be converted. Or, you write your JS-CPS in external <span class="inlinecode heavy">.cps</span> files and run a shell script to convert them to <span class="inlinecode heavy">.js</span> files.  The latter method is generally preferred.</p>
+<h4>Embed Directly On Page</h4>
+<pre>
+ 		&lt;script src=&quot;jquery_1.5.2_min.js&quot;&gt;&lt;/script&gt;    
+		&lt;script src=&quot;js-cps.js&quot;&gt;&lt;/script&gt;
+		&lt;script&gt;$(document).ready(function(){ convert_all_js_cps(false); });&lt;/script&gt;
+</pre>
+<p>JS-CPS requires jQuery.  Obviously, adjust any needed paths.  The last statement runs the conversion script. It'll convert any <span class="inlinecode"> &lt;script type=&quot;text/js-cps&quot;&gt; </span>elements it finds. Those scripts can be inline or refer to external files.</p>
+
+<h4>Using Shell Script <b>(OS X)</b></h4>
+<p>Place the entire <span class="inlinecode">js-cps</span> directory in the root of your project directory.</p>
+<p>You'll be writing .cps files (example: <span class="inlinecode heavy">something-fancy.cps</span> ), but your <span class="inlinecode heavy">script</span> tags will refer to files with both a .cps and .js extension. Like so:
+<pre>&lt;script src=&quot;<b>something-fancy.cps.js</b>&quot;&gt;&lt;/script&gt;</pre>
+<p>Note, we do <b>NOT</b> use the <span class="inlinecode heavy">type=&quot;text/js-cps&quot;</span> script type. That is only used when embedding the converter on a page</p>
+<p>To transform your .cps files to their .cps.js variants, simply cd to <span class="inlinecode heavy">your_project/js-cps/</span> and execute <span class="inlinecode heavy">transform_project.sh</span></p>
+<p>The shell script will run and find all .cps files in your project directory and output matching .cps.js files</p>
+<p>Note that the shell script requires the Mac JavaScript command line tool (JSC) to execute.</p>
+<hr />
+<h2>Using</h2>
+<p> the transform is pretty straightfoward.  Whenever something like this is discovered:
+<pre>
+      some_fancy_function( arg, <b>{CPS:var_name}</b> );
+      ....more commands
+      ....and maybe more
+    <b>}</b> //&tl;= the closing brace of the immediate environment where some_fancy_function is located. 
+</pre>
+	It becomes this:
+<pre>
+	some_fancy_function( arg, function(<b>var_name</b>)
+	                          {
+	                          	....more commands
+	                          	....and maybe more
+	                          });
+	<b>}</b> //&lt;= the closing brace of the immediate environment where some_fancy_function was located. 
+</pre>
+</p>
+
+<p><ul>
+	<li> The <span class="inlinecode heavy">{CPS:var_name}</span> token is replaced by a callback </li>
+	<li> The <span class="inlinecode heavy">{CPS:var_name}</span> token should always be the <b>last argument</b> of the function it is in. </li>
+	<li> The function where you are using the <span class="inlinecode heavy">{CPS:var_name}</span> token should expect a callback as its last argument.</li>
+	<li><span class="inlinecode heavy">var_name</span> is specified in <span class="inlinecode heavy">{CPS:var_name}</span> and then used as the argument to the callback function.</li>
+	<li> Everything that is between <span class="inlinecode heavy">some_fancy_function( arg, {CPS:var_name} );</span> and the closing brace of the environment is placed into the callback.</li>
+   </ul>
+</p>
+
+<p>Tip: even though in the final code it is irrelevant, it's nice for readability to use <span class="inlinecode heavy">var var_name = </span> right before the call to fancy function.
+<pre>
+    var mission_status = some_fancy_function(arg, {CPS:mission_status});
+    if(mission_status === 0){ abort_mission(); }
+</pre>
+</p>
+
+<h3>Error Handling</h3>
+<p>Not every AJAX call can be expected to succeed. There are different strategies for handling errors. Here are two</p>
+<h4>Pass null data to callback</h4>
+<p>In this variant on our example function, the callback is called with null if there is an error:
+<pre>
+	  //requires jQuery
+	  function get_server_data_v2(url, datav, successf)
+	  {
+		var options = datav ? {data:datav} : {};
+		options.success = successf;
+		<b>options.error = function(){ successf(null); };</b>
+		
+		$.ajax(url, options);
+	  }
+</pre>
+<h4>ERROR callback</h4>
+<p>The CPS token supports a second argument for specifying the name of an error callback handler. In this case, the function should expect <b>two</b> last arguments. The success callback and the error callback.</p>
+<p>Before  transformation the code looks like this:
+<pre>
+       some_fancy_function( arg, <b>{CPS:var_name, ERROR:error_f_name}</b> );
+      ....more commands
+      ....and maybe more
+    } //&lt;= the closing brace of the immediate environment where some_fancy_function is located. 
+</pre>
+	It becomes this:
+<pre>
+	 some_fancy_function( arg, function(var_name)
+	                          {
+	                          	....more commands
+	                          	....and maybe more
+	                          }, <b>error_f_name</b>);
+	} //&lt;== the closing brace of the immediate environment where some_fancy_function was located. 
+</pre>
+</p>
+
+<!-- <pre>   {CPS:var_name, <b>ERROR:error_f_name</b>}  </pre> -->
+<ul>
+	<li><span class="inlinecode heavy">error_f_name</span> is the <b>name</b> of a variable or function. It <b>cannot</b> be an inline function.<br /><br />
+	GOOD: 
+<pre>
+var errorh = function(obj, status, text){ console.log('error thrown: ', status, text); };
+var zz = get_server_data('thisurldoesnotexist.php', null, {CPS:zz, ERROR:<b>errorh</b>});
+</pre>
+    BAD:
+<pre>
+var zz = get_server_data('thisurldoesnotexist.php', null, {CPS:zz, ERROR:<b>function(obj, status, text){ console.log('error thrown: ', status, text); }</b>});
+</pre>
+</li>
+	<li>where the {CPS:var_name, ERROR:error_f_name} token is used, the function should expect <b>two</b> last arguments</li>
+	<li>in the CPS token, <span class="inlinecode heavy">CPS:</span> must come <b>before</b> <span class="inlinecode heavy">ERROR:</span></li>
+</ul>
+</p>
+<p>For those using jQuery, this variant of <span class="inlinecode">get_server_data</span> can accept either one last argument or two.  In the case where it receives one, it calls the success callback with null. Thus you can use this function for either error handling strategy.
+<pre>
+	function get_server_data(url, datav, successf, errorf)
+	{
+		var options = datav ? {data:datav} : {};
+		options.success = successf;
+		if(typeof errorf === 'undefined')
+		{	
+			options.error = function(){ successf(null); };
+		}
+		else
+		{
+			options.error =  errorf;
+		}
+		$.ajax(url, options);
+	  }
+</pre>
+</p>
+<hr />
+<h3>Gotcha: the &quot;immediate environment&quot;</h3>
+<p>The continuation that is wrapped into the callback is just out to the end of the immediate environment (nesting) of the function call where it occurs. This may be shorter than what you need in some circumstances.</p>
+<pre>
+		var data;
+		if(!remote)
+		{
+			data = ["1", "2", "3"];
+		}
+		else
+		{
+			data = get_server_data('dataneeded.php', null, {CPS:data});
+		} &lt;== the <b>environment</b> ends here. 
+		var i;                           &lt;=
+		for(i=0; i&lt; data.length; i++)    &lt;=    
+		{                                &lt;=   <b>NONE OF THIS WILL BE PART OF THE CALLBACK / CONTINUATION</b>
+		     do_something(data[i]);      &lt;=  
+		}                                &lt;=   
+</pre>
+
+</body>
+</html>
