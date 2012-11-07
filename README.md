@@ -5,7 +5,7 @@ JS-CPS is a very simple JavaScript library for converting normal synchronous loo
 Like CoffeeScript, JS-CPS can be used in one of two modes. You can either embed the transformer directly in your page, and then any `<script>` tags with `type="text/js-cps"` will automatically be converted. Or, you write your JS-CPS in external .cps files and run a shell script to convert them to .js files. The latter method is generally preferred.
 	
 ##Quick Example
-Let's say you have written a function named `get_server_data` and it uses an typical AJAX XmlHttpRequest to fetch something from a server. The important thing about this function is that it *last two arguments* are a success callback function and an error callback function.  The success callback is called with one argument: the data that is retrieved.  The error callback argument is optional to our function. Don't worry about it now.
+Let's say you have written a function named `get_server_data` and it uses a typical AJAX XmlHttpRequest to fetch something from a server. The important thing about this function is that it *last two arguments* are a success callback function and an error callback function.  The success callback is called with one argument: the data that is retrieved.  The error callback argument is optional to our function. Don't worry about it now.
 
 Here is the prototype for such a function:
     function get_server_data(url, datav, successf, errorf)
